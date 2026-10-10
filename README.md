@@ -101,6 +101,7 @@ Do not commit secrets or real API keys. Add private configuration values to a lo
 
 This is a portfolio-sized API testing CLI, not a complete replacement for Postman or a production API gateway. It currently uses a YAML collection, a local `config.yaml`, JSON response extraction, and a fixed 20-second request timeout. It does not yet support authentication helpers, retries, environment profiles, parallel execution, or redacted secret management.
 
+
 ## License
 
 MIT. See [`LICENSE`](LICENSE).
