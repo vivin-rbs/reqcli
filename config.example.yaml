@@ -1,0 +1,4 @@
+# Local-only configuration. Do not put private API keys in a public repository.
+variables:
+  base_url: "https://api.open-meteo.com"
+  echo_url: "https://httpbin.org"

@@ -1,0 +1,18 @@
+# Requests run from top to bottom. Values extracted from one response
+# become available to subsequent requests as {{variable_name}}.
+requests:
+  - name: get_weather
+    method: GET
+    url: "{{base_url}}/v1/forecast?latitude=48.8566&longitude=2.3522&current=temperature_2m,relative_humidity_2m,wind_speed_10m"
+    expect_status: 200
+    extract:
+      temperature_c: "/current/temperature_2m"
+      humidity_percent: "/current/relative_humidity_2m"
+      wind_kmh: "/current/wind_speed_10m"
+
+  - name: verify_weather_values
+    method: GET
+    url: "{{echo_url}}/get?temperature={{temperature_c}}&humidity={{humidity_percent}}&wind_kmh={{wind_kmh}}"
+    expect_status: 200
+    extract:
+      echoed_temperature: "/args/temperature"
