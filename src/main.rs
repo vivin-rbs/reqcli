@@ -361,6 +361,9 @@ fn render_template(input: &str, variables: &HashMap<String, String>) -> Result<S
     let mut remaining = input;
 
     while let Some(start) = remaining.find("{{") {
+        if remaining[..start].contains("}}") {
+            return Err(format!("Unexpected closing template delimiter in '{input}'"));
+        }
         rendered.push_str(&remaining[..start]);
         let after_open = &remaining[start + 2..];
         let Some(end) = after_open.find("}}") else {
@@ -446,6 +449,109 @@ mod tests {
     }
 
     #[test]
+
+    #[test]
+    fn rejects_unmatched_closing_template_delimiter() {
+        let variables = HashMap::new();
+        assert!(render_template("https://example.com/}}", &variables).is_err());
+    }
+
+    #[test]
+    fn rejects_empty_template_variable() {
+        let variables = HashMap::new();
+        assert!(render_template("https://example.com/{{ }}", &variables).is_err());
+    }
+
+    #[test]
+    fn rejects_unclosed_template_variable() {
+        let variables = HashMap::new();
+        assert!(render_template("https://example.com/{{name", &variables).is_err());
+    }
+
+    #[test]
+    fn substitutes_repeated_variables() {
+        let variables = HashMap::from([("id".to_owned(), "42".to_owned())]);
+        assert_eq!(
+            render_template("/users/{{id}}/orders/{{id}}", &variables).unwrap(),
+            "/users/42/orders/42"
+        );
+    }
+
+    #[test]
+    fn substitutes_adjacent_variables() {
+        let variables = HashMap::from([
+            ("first".to_owned(), "hello".to_owned()),
+            ("second".to_owned(), "world".to_owned()),
+        ]);
+        assert_eq!(
+            render_template("{{first}}{{second}}", &variables).unwrap(),
+            "helloworld"
+        );
+    }
+
+    #[test]
+    fn preserves_text_without_template_variables() {
+        let variables = HashMap::new();
+        let input = "https://example.com/plain?x=1";
+        assert_eq!(render_template(input, &variables).unwrap(), input);
+    }
+
+    #[test]
+    fn converts_json_boolean_extractions_to_strings() {
+        assert_eq!(json_value_to_string(&Value::Bool(true)), Some("true".to_owned()));
+    }
+
+    #[test]
+    fn converts_json_null_extractions_to_json_text() {
+        assert_eq!(json_value_to_string(&Value::Null), Some("null".to_owned()));
+    }
+
+    #[test]
+    fn converts_json_array_extractions_to_json_text() {
+        let value: Value = serde_json::json!([1, "two", false]);
+        assert_eq!(json_value_to_string(&value), Some(r#"[1,"two",false]"#.to_owned()));
+    }
+
+    #[test]
+    fn converts_json_object_extractions_to_json_text() {
+        let value: Value = serde_json::json!({"ok": true});
+        assert_eq!(json_value_to_string(&value), Some(r#"{"ok":true}"#.to_owned()));
+    }
+
+    #[test]
+    fn parses_all_supported_http_methods() {
+        for method in ["GET", "POST", "PUT", "PATCH", "DELETE"] {
+            assert!(parse_method(method).is_ok(), "{method} should be supported");
+        }
+    }
+
+    #[test]
+    fn parses_method_names_with_surrounding_whitespace() {
+        assert_eq!(parse_method("  get  ").unwrap(), Method::GET);
+    }
+
+    #[test]
+    fn loads_nested_config_variables() {
+        let config: RawConfig = serde_yaml::from_str(
+            "variables:\n  base_url: https://example.com\n  token: demo\n",
+        )
+        .unwrap();
+        assert_eq!(config.variables.get("base_url"), Some(&"https://example.com".to_owned()));
+        assert_eq!(config.variables.get("token"), Some(&"demo".to_owned()));
+    }
+
+    #[test]
+    fn request_spec_defaults_optional_fields() {
+        let spec: RequestSpec = serde_yaml::from_str(
+            "method: GET\nurl: https://example.com\n",
+        )
+        .unwrap();
+        assert!(spec.body.is_none());
+        assert!(spec.headers.is_empty());
+        assert!(spec.expect_status.is_none());
+        assert!(spec.extract.is_empty());
+    }
+
     fn supports_http_method_parsing_case_insensitively() {
         assert_eq!(parse_method("post").unwrap(), Method::POST);
         assert!(parse_method("TRACE").is_err());
