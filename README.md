@@ -9,6 +9,7 @@
 - `GET` and `POST` one-off requests from the terminal
 - YAML collections with sequential execution
 - `{{variable}}` substitution from `config.yaml` and earlier response extractions
+- Template validation for missing, empty, unclosed, and stray closing delimiters
 - JSON Pointer extraction, such as `/current/temperature_2m`
 - Expected-status assertions and readable PASS/FAIL summaries
 - 20-second request timeout
@@ -82,7 +83,7 @@ Each request supports:
 
 ## Configuration
 
-The bundle includes a local `config.yaml` for immediate use and a `config.example.yaml` template. `config.yaml` is ignored by Git so local values are not accidentally committed. `config.yaml` supports variables nested under `variables:`. Simple root-level string variables are also accepted.
+Copy `config.example.yaml` to `config.yaml` to get started. `config.yaml` is ignored by Git so local values are not accidentally committed. `config.yaml` supports variables nested under `variables:`. Simple root-level string variables are also accepted.
 
 ```yaml
 variables:
@@ -90,7 +91,7 @@ variables:
   echo_url: "https://httpbin.org"
 ```
 
-Do not commit secrets or real API keys. Add private configuration values to a local file and keep them out of public repositories.
+Do not commit secrets or real API keys. Add private configuration values to a local file and keep them out of public repositories. Unresolved variables cause the request to fail before it is sent. Variable names are trimmed, but values are inserted as-is.
 
 ## Exit behavior
 
